@@ -1,37 +1,35 @@
-interface UserProps {
+import { Model } from './Model';
+import { Eventing } from './Eventing';
+import { APISync } from './APISync';
+import { Attributes } from './Attributes';
+import { Collection } from './Collection';
+
+export interface UserProps {
+  id?: number;
   name?: string;
   age?: number;
 }
 
-type Callback = () => void;
+const rootURL = 'http://localhost:3000/users';
 
-export class User {
-  events: { [key: string]: Callback[] } = {};
-
-  constructor(private data: UserProps) {}
-
-  get(propName: string): number | string {
-    return this.data[propName];
+export class User extends Model<UserProps> {
+  static build(attrs: UserProps): User {
+    return new User(
+      new Attributes<UserProps>(attrs),
+      new Eventing(),
+      new APISync<UserProps>(rootURL)
+    );
   }
 
-  set(update: UserProps): void {
-    Object.assign(this.data, update);
-
-    this.trigger('change');
+  static buildCollection(): Collection<User, UserProps> {
+    return new Collection<User, UserProps>(rootURL, (props: UserProps) =>
+      User.build(props)
+    );
   }
 
-  on(eventName: string, callback: Callback) {
-    const handlers = this.events[eventName] || [];
+  setRandomAge = (): void => {
+    const age = Math.floor(Math.random() * 100);
 
-    handlers.push(callback);
-    this.events[eventName] = handlers;
-  }
-
-  trigger(eventName: string): void {
-    const handlers = this.events[eventName];
-
-    if (!handlers || handlers.length === 0) return;
-
-    handlers.forEach((callback) => callback());
-  }
+    this.set({ age });
+  };
 }
